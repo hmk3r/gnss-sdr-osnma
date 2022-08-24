@@ -14,6 +14,39 @@ SPDX-FileCopyrightText: 2011-2021 Carles Fernandez-Prades <carles.fernandez@cttc
 [![REUSE status](https://api.reuse.software/badge/github.com/gnss-sdr/gnss-sdr)](https://api.reuse.software/info/github.com/gnss-sdr/gnss-sdr)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
+## GNSS-SDR-OSNMA Changes
+
+To enable OSNMA in GNSS-SDR, compile this branch 
+(make sure that GnuTLS is installed on your system).
+
+The following settings were added to the config file:
+```text
+;######## GALILEO E1 OSNMA CONFIG #########
+Galileo.enable_osnma=true/false
+Galileo.osnma_keys_dir=path_to_osnma_keys_directory
+```
+
+The path to the keys directory should be relevant to the working directory, not the config file.
+
+The keys are provided in [./conf/osnma_keys](./conf/osnma_keys)
+
+An example config:
+
+```text
+...
+;######## GALILEO E1 OSNMA CONFIG #########
+Galileo.enable_osnma=true
+Galileo.osnma_keys_dir=./osnma_keys
+
+...
+```
+If `enable_osnma` is set to `true`, but `osnma_keys_dir` is not provided, 
+it defaults to `./osnma_keys`
+
+Then, run `gnss-sdr` as you would normally.
+
+##
+
 **Welcome to GNSS-SDR!**
 
 This program is a software-defined receiver which is able to process (that is,
