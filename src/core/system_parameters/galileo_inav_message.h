@@ -24,6 +24,7 @@
 #include "galileo_ephemeris.h"
 #include "galileo_iono.h"
 #include "galileo_utc_model.h"
+#include "galileo_osnma.h"
 #include "gnss_sdr_make_unique.h"  // for std::unique_ptr in C++11
 #include <bitset>
 #include <cstdint>
@@ -113,6 +114,12 @@ public:
      * \brief Returns a Galileo_Ephemeris object filled with the latest reduced CED received
      */
     Galileo_Ephemeris get_reduced_ced() const;
+
+    /*
+     * \brief Returns a Galileo_OSNMA object filled with the latest data from the Reserved1 field and the navigation data
+     */
+    Galileo_OSNMA get_osnma() const;
+
 
     inline bool get_flag_CRC_test() const
     {
@@ -237,6 +244,9 @@ private:
     std::bitset<GALILEO_DATA_JK_BITS> regenerate_page_4(const std::vector<uint8_t>& decoded) const;
 
     std::string page_Even{};
+
+    std::string data_OSNMA{}; // OSNMA data from Reserved1 field
+    std::string data_nav{}; // The decoded nav word, to be verified by OSNMA
 
     std::vector<uint8_t> rs_buffer;   // Reed-Solomon buffer
     std::unique_ptr<ReedSolomon> rs;  // The Reed-Solomon decoder

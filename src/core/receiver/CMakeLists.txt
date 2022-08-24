@@ -157,6 +157,7 @@ target_link_libraries(core_receiver
     PRIVATE
         algorithms_libs
         core_monitor
+        security_gr_blocks
         signal_source_adapters
         data_type_adapters
         input_filter_adapters

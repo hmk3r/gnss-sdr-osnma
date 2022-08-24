@@ -219,6 +219,8 @@ void Galileo_Inav_Message::split_page(std::string page_string, int32_t flag_even
                             Page_type_time_stamp = Page_type;
                             const std::string Data_jk_ephemeris = Data_k + Data_j;
                             page_jk_decoder(Data_jk_ephemeris.c_str());
+                            data_nav = Data_jk_ephemeris;
+                            data_OSNMA = Reserved_1;
                         }
                     else
                         {
@@ -611,6 +613,16 @@ Galileo_Ephemeris Galileo_Inav_Message::get_reduced_ced() const
     Galileo_Ephemeris eph = ced.compute_eph();
 
     return eph;
+}
+
+Galileo_OSNMA Galileo_Inav_Message::get_osnma() const
+{
+    Galileo_OSNMA osnma;
+    osnma.PRN = SV_ID_PRN_4;
+    osnma.OSNMA_data = data_OSNMA;
+    osnma.nav_data = data_nav;
+
+    return osnma;
 }
 
 

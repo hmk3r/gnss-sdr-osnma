@@ -37,6 +37,7 @@
 #include "gnss_sdr_make_unique.h"
 #include "gnss_synchro_monitor.h"
 #include "nav_message_monitor.h"
+#include "galileo_osnma_worker.h"
 #include "signal_source_interface.h"
 #include <boost/lexical_cast.hpp>    // for boost::lexical_cast
 #include <boost/tokenizer.hpp>       // for boost::tokenizer
@@ -271,6 +272,13 @@ void GNSSFlowgraph::init()
             udp_addr_vec.erase(std::unique(udp_addr_vec.begin(), udp_addr_vec.end()), udp_addr_vec.end());
             NavDataMonitor_ = nav_message_monitor_make(udp_addr_vec, configuration_->property("NavDataMonitor.port", 1237));
         }
+
+    enable_osnma_worker_ = configuration_->property("Channels_1B.count", 0) > 0 && configuration_->property("Galileo.enable_osnma", false);
+    if(enable_osnma_worker_)
+        {
+            std::string keys_dir = configuration_->property("Galileo.keys_dir", std::string("./osnma_keys"));
+            OSNMAWorker_ = galileo_osnma_worker_make(keys_dir);
+        }
 }
 
 
@@ -485,6 +493,14 @@ int GNSSFlowgraph::connect_desktop_flowgraph()
                     return 1;
                 }
             if (connect_galileo_tow_map() != 0)
+                {
+                    return 1;
+                }
+        }
+
+    if (enable_osnma_worker_)
+        {
+            if (connect_osnma_worker() != 0)
                 {
                     return 1;
                 }
@@ -1362,6 +1378,34 @@ int GNSSFlowgraph::connect_gal_e6_has()
             return 1;
         }
     DLOG(INFO) << "Galileo E6 HAS message ports connected";
+    return 0;
+}
+
+int GNSSFlowgraph::connect_osnma_worker()
+{
+    try
+        {
+            for (int i = 0; i < channels_count_; i++)
+                {
+                    const std::string gnss_signal = channels_.at(i)->get_signal().get_signal_str();
+                    switch(mapStringValues_[gnss_signal])
+                        {
+                        case evGAL_1B:
+                            top_block_->msg_connect(channels_.at(i)->get_right_block(), pmt::mp("telemetry_to_OSNMA"), OSNMAWorker_, pmt::mp("telemetry_to_OSNMA"));
+                            break;
+
+                        default:
+                            break;
+                        }
+                }
+        }
+    catch (const std::exception& e)
+        {
+            LOG(ERROR) << "Can't connect Galileo OSNMA msg ports: " << e.what();
+            top_block_->disconnect_all();
+            return 1;
+        }
+    DLOG(INFO) << "Galileo OSNMA message ports connected";
     return 0;
 }
 

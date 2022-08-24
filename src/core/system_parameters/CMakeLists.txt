@@ -56,6 +56,7 @@ set(SYSTEM_PARAMETERS_HEADERS
     galileo_has_data.h
     galileo_inav_message.h
     galileo_reduced_ced.h
+    galileo_osnma.h
     sbas_ephemeris.h
     gps_cnav_ephemeris.h
     gps_cnav_navigation_message.h

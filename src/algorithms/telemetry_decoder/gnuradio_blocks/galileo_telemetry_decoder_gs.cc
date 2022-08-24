@@ -29,6 +29,7 @@
 #include "galileo_has_page.h"        // For Galileo_HAS_page
 #include "galileo_iono.h"            // for Galileo_Iono
 #include "galileo_utc_model.h"       // for Galileo_Utc_Model
+#include "galileo_osnma.h"           // for Galileo_OSNMA
 #include "gnss_sdr_make_unique.h"    // for std::make_unique in C++11
 #include "gnss_synchro.h"            // for Gnss_Synchro
 #include "tlm_crc_stats.h"           // for Tlm_CRC_Stats
@@ -47,6 +48,7 @@
 #include <stdexcept>                 // for std::out_of_range
 #include <typeinfo>                  // for typeid
 #include <utility>                   // for std::pair
+#include <ctime>
 
 #if HAS_GENERIC_LAMBDA
 #else
@@ -105,7 +107,8 @@ galileo_telemetry_decoder_gs::galileo_telemetry_decoder_gs(
                       d_enable_reed_solomon_inav(false),
                       d_valid_timetag(false),
                       d_E6_TOW_set(false),
-                      d_there_are_e6_channels(conf.there_are_e6_channels)
+                      d_there_are_e6_channels(conf.there_are_e6_channels),
+                      d_enable_osnma(conf.enable_osnma)
 {
     // prevent telemetry symbols accumulation in output buffers
     this->set_max_noutput_items(1);
@@ -139,6 +142,12 @@ galileo_telemetry_decoder_gs::galileo_telemetry_decoder_gs(
         {
             // register nav message monitor out
             this->message_port_register_out(pmt::mp("Nav_msg_from_TLM"));
+        }
+
+    if (d_enable_osnma)
+        {
+            // register OSNMA message processor out
+            this->message_port_register_out(pmt::mp("telemetry_to_OSNMA"));
         }
 
     d_satellite = Gnss_Satellite(satellite.get_system(), satellite.get_PRN());
@@ -397,6 +406,23 @@ void galileo_telemetry_decoder_gs::decode_INAV_word(float *page_part_symbols, in
                     if (d_band == '1')
                         {
                             DLOG(INFO) << "Galileo E1 CRC correct in channel " << d_channel << " from satellite " << d_satellite;
+                            if (d_enable_osnma)
+                                {
+                                    auto time_time_t =  std::time(nullptr);
+                                    const auto time_int64_t = *reinterpret_cast<int64_t*>(&time_time_t);
+                                    const std::shared_ptr<Galileo_OSNMA> tmp_obj = std::make_shared<Galileo_OSNMA>(d_inav_nav.get_osnma());
+                                    // The call d_inav_nav.init_PRN() in the constructor does nothing, as it is call made at time of instantiation,
+                                    // when the flow graph is not running, so there is no actual satellite, and it defaults to 0
+                                    // Therefore, SV_ID_PRN_4 is set to the correct value only when we receive Word 4
+                                    // In consequence OSNMA data collection is broken until Word 4 is received
+                                    // Temp fix:
+                                    tmp_obj->PRN = d_satellite.get_PRN();
+                                    std::cout <<
+                                        TEXT_MAGENTA <<
+                                        "New Galileo OSNMA message received in channel " << d_channel << " from satellite " << d_satellite <<
+                                        TEXT_RESET << '\n';
+                                    this->message_port_pub(pmt::mp("telemetry_to_OSNMA"), pmt::make_any(tmp_obj));
+                                }
                         }
                     else if (d_band == '7')
                         {

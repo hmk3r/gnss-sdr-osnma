@@ -34,4 +34,8 @@ void Tlm_Conf::SetFromConfiguration(const ConfigurationInterface *configuration,
         {
             there_are_e6_channels = true;
         }
+    if (configuration->property("Channels_1B.count", 0) > 0 && configuration->property("Galileo.enable_osnma", false))
+        {
+            enable_osnma = true;
+        }
 }
