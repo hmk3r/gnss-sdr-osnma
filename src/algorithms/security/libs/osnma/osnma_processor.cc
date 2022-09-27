@@ -328,7 +328,6 @@ void OSNMAProcessor::process_dsm_kroot_block(int32_t dsm_id, int32_t block_id, c
         }
 
     err = gnutls_pubkey_verify_data2(public_key_info.key, public_key_info.algorithm, 0, &message, &signature);
-    gnutls_free(&signature);
 
 
     if (err < 0)
